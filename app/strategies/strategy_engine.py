@@ -86,7 +86,10 @@ class StrategyEngine:
         if self._is_duplicate(pair, timeframe, direction):
             return None
 
-        confidence = sum(conditions.values()) / len(conditions)
+        serializable_conditions = {
+            name: bool(value) for name, value in conditions.items()
+        }
+        confidence = sum(serializable_conditions.values()) / len(serializable_conditions)
         now = datetime.now(timezone.utc)
         self._last_signals[(pair, timeframe, direction)] = now
 
@@ -101,7 +104,7 @@ class StrategyEngine:
             confidence=round(confidence, 2),
             timestamp=now,
             metadata={
-                "conditions": conditions,
+                "conditions": serializable_conditions,
                 "macd": round(float(current["macd"]), 6),
                 "macd_signal": round(float(current["macd_signal"]), 6),
                 "ema20": round(float(current["ema20"]), 6),
