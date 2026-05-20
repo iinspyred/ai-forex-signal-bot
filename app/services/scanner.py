@@ -36,8 +36,11 @@ class MarketScanner:
         logger.info("Market scanner started")
         try:
             while True:
+                scan_started_at = asyncio.get_running_loop().time()
                 await self.scan_once()
-                await asyncio.sleep(self.settings.SCAN_INTERVAL_SECONDS)
+                elapsed = asyncio.get_running_loop().time() - scan_started_at
+                delay = max(5.0, self.settings.SCAN_INTERVAL_SECONDS - elapsed)
+                await asyncio.sleep(delay)
         finally:
             self.state.running = False
             logger.info("Market scanner stopped")

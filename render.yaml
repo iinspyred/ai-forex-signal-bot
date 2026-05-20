@@ -11,13 +11,15 @@ services:
       - key: LOG_LEVEL
         value: INFO
       - key: SCAN_INTERVAL_SECONDS
-        value: "120"
+        value: "60"
       - key: MARKET_DATA_PROVIDER
         value: twelvedata
       - key: MARKET_DATA_MIN_INTERVAL_SECONDS
         value: "8"
       - key: SIGNAL_COOLDOWN_MINUTES
-        value: "30"
+        value: "15"
+      - key: SIGNAL_MIN_CONFIDENCE
+        value: "0.55"
       - key: HEARTBEAT_INTERVAL_SECONDS
         value: "3600"
       - key: RISK_ATR_STOP_MULTIPLIER

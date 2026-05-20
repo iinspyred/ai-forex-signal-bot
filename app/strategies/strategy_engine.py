@@ -12,12 +12,14 @@ class StrategyEngine:
     def __init__(
         self,
         cooldown_minutes: int,
+        min_confidence: float = 0.55,
         atr_stop_multiplier: float = 1.5,
         risk_reward_ratio: float = 2.0,
         trailing_stop_atr_multiplier: float = 1.0,
         account_risk_percent: float = 1.0,
     ) -> None:
         self.cooldown = timedelta(minutes=cooldown_minutes)
+        self.min_confidence = min_confidence
         self.atr_stop_multiplier = atr_stop_multiplier
         self.risk_reward_ratio = risk_reward_ratio
         self.trailing_stop_atr_multiplier = trailing_stop_atr_multiplier
@@ -42,27 +44,29 @@ class StrategyEngine:
         ai_prediction = self._ai_prediction_placeholder(pair, timeframe, current)
 
         buy_conditions = {
-            "RSI oversold": current["rsi"] < 30,
-            "EMA bullish crossover": previous["ema20"] <= previous["ema50"]
-            and current["ema20"] > current["ema50"],
-            "MACD bullish crossover": previous["macd"] <= previous["macd_signal"]
-            and current["macd"] > current["macd_signal"],
+            "RSI bullish zone": 30 <= current["rsi"] <= 60,
+            "EMA trend bullish": current["ema20"] > current["ema50"],
+            "Price above EMA20": current["close"] > current["ema20"],
+            "MACD bullish bias": current["macd"] > current["macd_signal"],
+            "MACD momentum improving": (current["macd"] - current["macd_signal"])
+            > (previous["macd"] - previous["macd_signal"]),
             "Trend bullish": trend == "Bullish",
             "Volatility acceptable": volatility_ok,
             "Volume confirmed": volume_ok,
         }
         sell_conditions = {
-            "RSI overbought": current["rsi"] > 70,
-            "EMA bearish crossover": previous["ema20"] >= previous["ema50"]
-            and current["ema20"] < current["ema50"],
-            "MACD bearish crossover": previous["macd"] >= previous["macd_signal"]
-            and current["macd"] < current["macd_signal"],
+            "RSI bearish zone": 40 <= current["rsi"] <= 70,
+            "EMA trend bearish": current["ema20"] < current["ema50"],
+            "Price below EMA20": current["close"] < current["ema20"],
+            "MACD bearish bias": current["macd"] < current["macd_signal"],
+            "MACD momentum weakening": (current["macd"] - current["macd_signal"])
+            < (previous["macd"] - previous["macd_signal"]),
             "Trend bearish": trend == "Bearish",
             "Volatility acceptable": volatility_ok,
             "Volume confirmed": volume_ok,
         }
 
-        if self._is_actionable(buy_conditions):
+        if self._is_actionable(buy_conditions, self.min_confidence):
             return self._build_signal(
                 pair,
                 timeframe,
@@ -72,7 +76,7 @@ class StrategyEngine:
                 buy_conditions,
                 ai_prediction,
             )
-        if self._is_actionable(sell_conditions):
+        if self._is_actionable(sell_conditions, self.min_confidence):
             return self._build_signal(
                 pair,
                 timeframe,
@@ -113,7 +117,7 @@ class StrategyEngine:
             entry=risk_plan["entry"],
             rsi=round(float(current["rsi"]), 2),
             trend=trend,
-            strategy="EMA crossover + RSI + MACD + trend/volatility filters",
+            strategy="Active confluence: EMA trend + RSI zone + MACD momentum + risk filters",
             confidence=round(confidence, 2),
             stop_loss=risk_plan["stop_loss"],
             take_profit=risk_plan["take_profit"],
@@ -177,14 +181,16 @@ class StrategyEngine:
         return recent >= average * 0.75
 
     @staticmethod
-    def _is_actionable(conditions: dict[str, bool]) -> bool:
-        return all(
+    def _is_actionable(conditions: dict[str, bool], min_confidence: float) -> bool:
+        risk_filters_ok = all(
             conditions[name]
             for name in (
                 "Volatility acceptable",
                 "Volume confirmed",
             )
-        ) and sum(conditions.values()) >= 5
+        )
+        confidence = sum(bool(value) for value in conditions.values()) / len(conditions)
+        return risk_filters_ok and confidence >= min_confidence
 
     def _risk_plan(
         self,

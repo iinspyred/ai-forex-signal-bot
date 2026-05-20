@@ -8,7 +8,7 @@ Production-ready FastAPI forex signal scanner that reads market candles, generat
 - Async TwelveData candle fetching for `EUR/USD`, `GBP/USD`, `USD/JPY`, `AUD/USD`
 - Optional Alpha Vantage FX intraday candle provider
 - Finnhub quote enrichment with graceful fallback
-- RSI, EMA 20/50, MACD, ATR volatility, volume confirmation
+- Active confluence signals using RSI zone, EMA trend, price/EMA location, MACD bias, ATR volatility, and volume confirmation
 - Duplicate signal prevention and confidence score
 - ATR-based stop loss, take profit, trailing stop, and risk/reward levels
 - Telegram alerts, startup notification, hourly heartbeat, and error alerts
@@ -102,10 +102,14 @@ The default provider is TwelveData:
 ```env
 MARKET_DATA_PROVIDER=twelvedata
 MARKET_DATA_MIN_INTERVAL_SECONDS=8
-SCAN_INTERVAL_SECONDS=120
+SCAN_INTERVAL_SECONDS=60
+SIGNAL_COOLDOWN_MINUTES=15
+SIGNAL_MIN_CONFIDENCE=0.55
 ```
 
-This spaces candle requests out so free or low-tier minute limits are less likely to be exceeded. To use Alpha Vantage instead, add an Alpha Vantage key and set:
+This spaces candle requests out so free or low-tier minute limits are less likely to be exceeded. The scanner subtracts API-call time from the next sleep, so when requests take longer than the interval it starts the next cycle after a short pause.
+
+To use Alpha Vantage instead, add an Alpha Vantage key and set:
 
 ```env
 MARKET_DATA_PROVIDER=alphavantage

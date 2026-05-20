@@ -30,7 +30,8 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "sqlite:///./data/signals.db"
     SCAN_INTERVAL_SECONDS: int = Field(default=60, ge=15, le=900)
-    SIGNAL_COOLDOWN_MINUTES: int = Field(default=30, ge=1, le=1440)
+    SIGNAL_COOLDOWN_MINUTES: int = Field(default=15, ge=1, le=1440)
+    SIGNAL_MIN_CONFIDENCE: float = Field(default=0.55, ge=0.1, le=1.0)
     HEARTBEAT_INTERVAL_SECONDS: int = Field(default=3600, ge=300, le=86400)
     REQUEST_TIMEOUT_SECONDS: float = Field(default=12.0, ge=1.0, le=60.0)
     MARKET_DATA_MIN_INTERVAL_SECONDS: float = Field(default=8.0, ge=0.0, le=120.0)
