@@ -6,6 +6,7 @@ Production-ready FastAPI forex signal scanner that reads market candles, generat
 
 - FastAPI dashboard endpoints: `/`, `/health`, `/signals`, `/stats`
 - Async TwelveData candle fetching for `EUR/USD`, `GBP/USD`, `USD/JPY`, `AUD/USD`
+- Optional Alpha Vantage FX intraday candle provider
 - Finnhub quote enrichment with graceful fallback
 - RSI, EMA 20/50, MACD, ATR volatility, volume confirmation
 - Duplicate signal prevention and confidence score
@@ -25,6 +26,8 @@ Secrets must be provided through environment variables only:
 ```bash
 TWELVEDATA_API_KEY=
 FINNHUB_API_KEY=
+ALPHAVANTAGE_API_KEY=
+MARKET_DATA_PROVIDER=twelvedata
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
 ```
@@ -86,6 +89,25 @@ Health check:
 ```text
 /health
 ```
+
+## Market Data Limits
+
+The default provider is TwelveData:
+
+```env
+MARKET_DATA_PROVIDER=twelvedata
+MARKET_DATA_MIN_INTERVAL_SECONDS=8
+SCAN_INTERVAL_SECONDS=120
+```
+
+This spaces candle requests out so free or low-tier minute limits are less likely to be exceeded. To use Alpha Vantage instead, add an Alpha Vantage key and set:
+
+```env
+MARKET_DATA_PROVIDER=alphavantage
+ALPHAVANTAGE_API_KEY=your_key_here
+```
+
+Alpha Vantage uses the official `FX_INTRADAY` endpoint for forex pairs.
 
 ## GitHub Auto Deploy
 

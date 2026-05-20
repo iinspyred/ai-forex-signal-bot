@@ -6,6 +6,7 @@ from app.config import Settings
 from app.models import ScannerState
 from app.services.database import SignalDatabase
 from app.services.market_service import MarketService
+from app.services.market_service import MarketDataRateLimitError
 from app.services.telegram_service import TelegramService
 from app.strategies.strategy_engine import StrategyEngine
 
@@ -58,6 +59,11 @@ class MarketScanner:
                     await self.telegram_service.send_signal(signal)
                     self.state.generated_signals += 1
                     trade_logger.info("%s", signal.model_dump_json())
+                except MarketDataRateLimitError as exc:
+                    message = f"Market data rate limit for {pair} {timeframe}: {exc}"
+                    self.state.last_error = message
+                    logger.warning(message)
+                    return
                 except Exception as exc:  # noqa: BLE001 - one pair must not stop the scanner.
                     message = f"Scan failed for {pair} {timeframe}: {exc}"
                     self.state.last_error = message

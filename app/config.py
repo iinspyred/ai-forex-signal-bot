@@ -22,6 +22,8 @@ class Settings(BaseSettings):
 
     TWELVEDATA_API_KEY: str = Field(..., min_length=1)
     FINNHUB_API_KEY: str = Field(..., min_length=1)
+    ALPHAVANTAGE_API_KEY: str = ""
+    MARKET_DATA_PROVIDER: str = "twelvedata"
     TELEGRAM_BOT_TOKEN: str = Field(..., min_length=1)
     TELEGRAM_CHAT_ID: str = ""
     TELEGRAM_WEBHOOK_URL: str = ""
@@ -31,6 +33,7 @@ class Settings(BaseSettings):
     SIGNAL_COOLDOWN_MINUTES: int = Field(default=30, ge=1, le=1440)
     HEARTBEAT_INTERVAL_SECONDS: int = Field(default=3600, ge=300, le=86400)
     REQUEST_TIMEOUT_SECONDS: float = Field(default=12.0, ge=1.0, le=60.0)
+    MARKET_DATA_MIN_INTERVAL_SECONDS: float = Field(default=8.0, ge=0.0, le=120.0)
     RATE_LIMIT_REQUESTS: int = Field(default=60, ge=1)
     RATE_LIMIT_WINDOW_SECONDS: int = Field(default=60, ge=1)
 

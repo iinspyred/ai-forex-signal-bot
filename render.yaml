@@ -11,7 +11,11 @@ services:
       - key: LOG_LEVEL
         value: INFO
       - key: SCAN_INTERVAL_SECONDS
-        value: "60"
+        value: "120"
+      - key: MARKET_DATA_PROVIDER
+        value: twelvedata
+      - key: MARKET_DATA_MIN_INTERVAL_SECONDS
+        value: "8"
       - key: SIGNAL_COOLDOWN_MINUTES
         value: "30"
       - key: HEARTBEAT_INTERVAL_SECONDS
@@ -21,6 +25,8 @@ services:
       - key: TWELVEDATA_API_KEY
         sync: false
       - key: FINNHUB_API_KEY
+        sync: false
+      - key: ALPHAVANTAGE_API_KEY
         sync: false
       - key: TELEGRAM_BOT_TOKEN
         sync: false
