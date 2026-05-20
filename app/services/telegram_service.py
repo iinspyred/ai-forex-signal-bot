@@ -53,32 +53,33 @@ class TelegramService:
         await self.application.process_update(update)
 
     async def send_startup(self) -> None:
-        await self.send_message("AI Forex Signal Bot started.")
+        await self.send_message("🤖 AI Forex Signal Bot started.")
 
     async def send_heartbeat(self) -> None:
         state = self._scanner_state or ScannerState()
         await self.send_message(
-            "Heartbeat\n"
-            f"Running: {state.running}\n"
-            f"Last scan: {state.last_scan_at.isoformat() if state.last_scan_at else 'never'}\n"
-            f"Signals: {state.generated_signals}"
+            "💓 Heartbeat\n"
+            f"⚙️ Running: {state.running}\n"
+            f"🕒 Last scan: {state.last_scan_at.isoformat() if state.last_scan_at else 'never'}\n"
+            f"📡 Signals: {state.generated_signals}"
         )
 
     async def send_error(self, message: str) -> None:
-        await self.send_message(f"Error alert\n{escape(message)}")
+        await self.send_message(f"🚨 Error alert\n{escape(message)}")
 
     async def send_signal(self, signal: Signal) -> None:
-        icon = "BUY SIGNAL" if signal.direction.value == "BUY" else "SELL SIGNAL"
+        icon = "🚀🟢 BUY SIGNAL" if signal.direction.value == "BUY" else "🔻🔴 SELL SIGNAL"
+        trend_icon = "📈" if signal.trend == "Bullish" else "📉" if signal.trend == "Bearish" else "➡️"
         text = (
             f"<b>{icon}</b>\n\n"
-            f"Pair: <b>{escape(signal.pair)}</b>\n"
-            f"Timeframe: {escape(signal.timeframe)}\n"
-            f"Entry: <code>{signal.entry}</code>\n"
-            f"RSI: {signal.rsi}\n"
-            f"Trend: {escape(signal.trend)}\n"
-            f"Confidence: {signal.confidence:.0%}\n\n"
-            f"Strategy:\n{escape(signal.strategy)}\n\n"
-            f"Timestamp: {signal.timestamp.astimezone(timezone.utc).isoformat()}"
+            f"💱 Pair: <b>{escape(signal.pair)}</b>\n"
+            f"⏱️ Timeframe: {escape(signal.timeframe)}\n"
+            f"🎯 Entry: <code>{signal.entry}</code>\n"
+            f"📊 RSI: {signal.rsi}\n"
+            f"{trend_icon} Trend: {escape(signal.trend)}\n"
+            f"🔥 Confidence: {signal.confidence:.0%}\n\n"
+            f"🧠 Strategy:\n{escape(signal.strategy)}\n\n"
+            f"🕒 Timestamp: {signal.timestamp.astimezone(timezone.utc).isoformat()}"
         )
         await self.send_message(text, parse_mode=ParseMode.HTML)
 
@@ -109,31 +110,32 @@ class TelegramService:
         del context
         await update.message.reply_text(
             "/start - show chat id\n"
-            "/status - scanner status\n"
-            "/signals - latest signals\n"
-            "/stats - signal counts"
+            "📡 /status - scanner status\n"
+            "📈 /signals - latest signals\n"
+            "📊 /stats - signal counts"
         )
 
     async def _status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         del context
         state = self._scanner_state or ScannerState()
         await update.message.reply_text(
-            "Scanner status\n"
-            f"Running: {state.running}\n"
-            f"Last scan: {state.last_scan_at.isoformat() if state.last_scan_at else 'never'}\n"
-            f"Last error: {state.last_error or 'none'}"
+            "📡 Scanner status\n"
+            f"⚙️ Running: {state.running}\n"
+            f"🕒 Last scan: {state.last_scan_at.isoformat() if state.last_scan_at else 'never'}\n"
+            f"🚨 Last error: {state.last_error or 'none'}"
         )
 
     async def _signals_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         del context
         signals = await self.database.recent_signals(limit=5)
         if not signals:
-            await update.message.reply_text("No signals recorded yet.")
+            await update.message.reply_text("📭 No signals recorded yet.")
             return
-        lines = ["Latest signals"]
+        lines = ["📈 Latest signals"]
         for signal in signals:
+            direction_icon = "🚀🟢" if signal["direction"] == "BUY" else "🔻🔴"
             lines.append(
-                f"{signal['direction']} {signal['pair']} {signal['timeframe']} "
+                f"{direction_icon} {signal['direction']} {signal['pair']} {signal['timeframe']} "
                 f"@ {signal['entry']} ({signal['timestamp']})"
             )
         await update.message.reply_text("\n".join(lines))
@@ -142,11 +144,13 @@ class TelegramService:
         del context
         stats = await self.database.stats()
         await update.message.reply_text(
-            "Stats\n"
-            f"Total: {stats['total_signals']}\n"
-            f"BUY: {stats['buy_signals']}\n"
-            f"SELL: {stats['sell_signals']}\n"
-            "Win/loss: placeholder until exit rules are configured"
+            "📊 Stats\n"
+            f"📡 Total: {stats['total_signals']}\n"
+            f"🚀🟢 BUY: {stats['buy_signals']}\n"
+            f"🔻🔴 SELL: {stats['sell_signals']}\n"
+            "🏆 Wins: 0\n"
+            "❌ Losses: 0\n"
+            "⚖️ Win/loss tracking activates after exit rules are configured"
         )
 
     def _register_handlers(self) -> None:
