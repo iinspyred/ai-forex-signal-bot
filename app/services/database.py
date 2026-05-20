@@ -44,11 +44,17 @@ class SignalDatabase:
                         trend TEXT NOT NULL,
                         strategy TEXT NOT NULL,
                         confidence REAL NOT NULL,
+                        stop_loss REAL NOT NULL DEFAULT 0,
+                        take_profit REAL NOT NULL DEFAULT 0,
+                        trailing_stop REAL NOT NULL DEFAULT 0,
+                        risk_reward REAL NOT NULL DEFAULT 0,
+                        risk_percent REAL NOT NULL DEFAULT 0,
                         timestamp TEXT NOT NULL,
                         metadata TEXT NOT NULL
                     )
                     """
                 )
+                self._ensure_signal_columns(conn)
             self._initialized = True
 
     async def save_signal(self, signal: Signal) -> None:
@@ -59,8 +65,9 @@ class SignalDatabase:
                     """
                     INSERT INTO signals (
                         pair, timeframe, direction, entry, rsi, trend, strategy,
-                        confidence, timestamp, metadata
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        confidence, stop_loss, take_profit, trailing_stop,
+                        risk_reward, risk_percent, timestamp, metadata
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         signal.pair,
@@ -71,6 +78,11 @@ class SignalDatabase:
                         signal.trend,
                         signal.strategy,
                         signal.confidence,
+                        signal.stop_loss,
+                        signal.take_profit,
+                        signal.trailing_stop,
+                        signal.risk_reward,
+                        signal.risk_percent,
                         signal.timestamp.isoformat(),
                         json.dumps(signal.metadata),
                     ),
@@ -111,3 +123,19 @@ class SignalDatabase:
         item = dict(row)
         item["metadata"] = json.loads(item["metadata"])
         return item
+
+    @staticmethod
+    def _ensure_signal_columns(conn: sqlite3.Connection) -> None:
+        existing = {
+            row["name"] for row in conn.execute("PRAGMA table_info(signals)").fetchall()
+        }
+        columns = {
+            "stop_loss": "REAL NOT NULL DEFAULT 0",
+            "take_profit": "REAL NOT NULL DEFAULT 0",
+            "trailing_stop": "REAL NOT NULL DEFAULT 0",
+            "risk_reward": "REAL NOT NULL DEFAULT 0",
+            "risk_percent": "REAL NOT NULL DEFAULT 0",
+        }
+        for name, definition in columns.items():
+            if name not in existing:
+                conn.execute(f"ALTER TABLE signals ADD COLUMN {name} {definition}")

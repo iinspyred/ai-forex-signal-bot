@@ -22,7 +22,13 @@ started_at = datetime.now(timezone.utc)
 
 database = SignalDatabase(settings.DATABASE_URL)
 market_service = MarketService(settings)
-strategy_engine = StrategyEngine(settings.SIGNAL_COOLDOWN_MINUTES)
+strategy_engine = StrategyEngine(
+    cooldown_minutes=settings.SIGNAL_COOLDOWN_MINUTES,
+    atr_stop_multiplier=settings.RISK_ATR_STOP_MULTIPLIER,
+    risk_reward_ratio=settings.RISK_REWARD_RATIO,
+    trailing_stop_atr_multiplier=settings.TRAILING_STOP_ATR_MULTIPLIER,
+    account_risk_percent=settings.ACCOUNT_RISK_PERCENT,
+)
 telegram_service = TelegramService(settings, database)
 scanner = MarketScanner(settings, market_service, strategy_engine, telegram_service, database)
 rate_limiter = InMemoryRateLimiter(

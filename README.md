@@ -10,6 +10,7 @@ Production-ready FastAPI forex signal scanner that reads market candles, generat
 - Finnhub quote enrichment with graceful fallback
 - RSI, EMA 20/50, MACD, ATR volatility, volume confirmation
 - Duplicate signal prevention and confidence score
+- ATR-based stop loss, take profit, trailing stop, and risk/reward levels
 - Telegram alerts, startup notification, hourly heartbeat, and error alerts
 - Telegram commands: `/start`, `/help`, `/status`, `/signals`, `/stats`
 - Telegram polling by default, webhook mode when `TELEGRAM_WEBHOOK_URL` is set
@@ -30,6 +31,10 @@ ALPHAVANTAGE_API_KEY=
 MARKET_DATA_PROVIDER=twelvedata
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
+RISK_ATR_STOP_MULTIPLIER=1.5
+RISK_REWARD_RATIO=2.0
+TRAILING_STOP_ATR_MULTIPLIER=1.0
+ACCOUNT_RISK_PERCENT=1.0
 ```
 
 ## Local Setup
@@ -108,6 +113,28 @@ ALPHAVANTAGE_API_KEY=your_key_here
 ```
 
 Alpha Vantage uses the official `FX_INTRADAY` endpoint for forex pairs.
+
+## Risk Engine
+
+Every generated signal includes an ATR-based risk plan:
+
+```text
+Entry
+Stop Loss
+Take Profit
+Trailing Stop
+Risk/Reward
+Account Risk %
+```
+
+The default values are:
+
+```env
+RISK_ATR_STOP_MULTIPLIER=1.5
+RISK_REWARD_RATIO=2.0
+TRAILING_STOP_ATR_MULTIPLIER=1.0
+ACCOUNT_RISK_PERCENT=1.0
+```
 
 ## GitHub Auto Deploy
 

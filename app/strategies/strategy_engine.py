@@ -9,8 +9,19 @@ from app.models import AIPrediction, Candle, Signal, SignalDirection
 
 
 class StrategyEngine:
-    def __init__(self, cooldown_minutes: int) -> None:
+    def __init__(
+        self,
+        cooldown_minutes: int,
+        atr_stop_multiplier: float = 1.5,
+        risk_reward_ratio: float = 2.0,
+        trailing_stop_atr_multiplier: float = 1.0,
+        account_risk_percent: float = 1.0,
+    ) -> None:
         self.cooldown = timedelta(minutes=cooldown_minutes)
+        self.atr_stop_multiplier = atr_stop_multiplier
+        self.risk_reward_ratio = risk_reward_ratio
+        self.trailing_stop_atr_multiplier = trailing_stop_atr_multiplier
+        self.account_risk_percent = account_risk_percent
         self._last_signals: dict[tuple[str, str, SignalDirection], datetime] = {}
 
     def analyze(self, pair: str, timeframe: str, candles: list[Candle]) -> Signal | None:
@@ -92,16 +103,23 @@ class StrategyEngine:
         confidence = sum(serializable_conditions.values()) / len(serializable_conditions)
         now = datetime.now(timezone.utc)
         self._last_signals[(pair, timeframe, direction)] = now
+        entry = float(current["close"])
+        risk_plan = self._risk_plan(pair, direction, entry, float(current["atr"]))
 
         return Signal(
             pair=pair,
             timeframe=timeframe,
             direction=direction,
-            entry=round(float(current["close"]), 5),
+            entry=risk_plan["entry"],
             rsi=round(float(current["rsi"]), 2),
             trend=trend,
             strategy="EMA crossover + RSI + MACD + trend/volatility filters",
             confidence=round(confidence, 2),
+            stop_loss=risk_plan["stop_loss"],
+            take_profit=risk_plan["take_profit"],
+            trailing_stop=risk_plan["trailing_stop"],
+            risk_reward=self.risk_reward_ratio,
+            risk_percent=self.account_risk_percent,
             timestamp=now,
             metadata={
                 "conditions": serializable_conditions,
@@ -110,6 +128,8 @@ class StrategyEngine:
                 "ema20": round(float(current["ema20"]), 6),
                 "ema50": round(float(current["ema50"]), 6),
                 "atr_percent": round(float(current["atr_percent"]), 4),
+                "atr": risk_plan["atr"],
+                "risk_distance": risk_plan["risk_distance"],
                 "ai_prediction": ai_prediction.model_dump(),
             },
         )
@@ -165,6 +185,40 @@ class StrategyEngine:
                 "Volume confirmed",
             )
         ) and sum(conditions.values()) >= 5
+
+    def _risk_plan(
+        self,
+        pair: str,
+        direction: SignalDirection,
+        entry: float,
+        atr: float,
+    ) -> dict[str, float]:
+        precision = self._price_precision(pair)
+        safe_atr = max(atr, entry * 0.0001)
+        risk_distance = safe_atr * self.atr_stop_multiplier
+        trailing_distance = safe_atr * self.trailing_stop_atr_multiplier
+
+        if direction == SignalDirection.BUY:
+            stop_loss = entry - risk_distance
+            take_profit = entry + (risk_distance * self.risk_reward_ratio)
+            trailing_stop = entry - trailing_distance
+        else:
+            stop_loss = entry + risk_distance
+            take_profit = entry - (risk_distance * self.risk_reward_ratio)
+            trailing_stop = entry + trailing_distance
+
+        return {
+            "entry": round(entry, precision),
+            "stop_loss": round(stop_loss, precision),
+            "take_profit": round(take_profit, precision),
+            "trailing_stop": round(trailing_stop, precision),
+            "atr": round(safe_atr, precision),
+            "risk_distance": round(risk_distance, precision),
+        }
+
+    @staticmethod
+    def _price_precision(pair: str) -> int:
+        return 3 if pair.endswith("/JPY") else 5
 
     @staticmethod
     def _ai_prediction_placeholder(pair: str, timeframe: str, row: pd.Series) -> AIPrediction:

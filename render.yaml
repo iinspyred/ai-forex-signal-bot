@@ -20,6 +20,14 @@ services:
         value: "30"
       - key: HEARTBEAT_INTERVAL_SECONDS
         value: "3600"
+      - key: RISK_ATR_STOP_MULTIPLIER
+        value: "1.5"
+      - key: RISK_REWARD_RATIO
+        value: "2.0"
+      - key: TRAILING_STOP_ATR_MULTIPLIER
+        value: "1.0"
+      - key: ACCOUNT_RISK_PERCENT
+        value: "1.0"
       - key: DATABASE_URL
         value: sqlite:///./data/signals.db
       - key: TWELVEDATA_API_KEY

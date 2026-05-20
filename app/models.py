@@ -34,6 +34,11 @@ class Signal(BaseModel):
     trend: str
     strategy: str
     confidence: float = Field(ge=0.0, le=1.0)
+    stop_loss: float
+    take_profit: float
+    trailing_stop: float
+    risk_reward: float
+    risk_percent: float
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     metadata: dict[str, Any] = Field(default_factory=dict)
 

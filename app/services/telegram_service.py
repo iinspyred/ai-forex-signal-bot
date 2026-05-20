@@ -75,6 +75,11 @@ class TelegramService:
             f"💱 Pair: <b>{escape(signal.pair)}</b>\n"
             f"⏱️ Timeframe: {escape(signal.timeframe)}\n"
             f"🎯 Entry: <code>{signal.entry}</code>\n"
+            f"🛑 Stop Loss: <code>{signal.stop_loss}</code>\n"
+            f"💰 Take Profit: <code>{signal.take_profit}</code>\n"
+            f"🧲 Trailing Stop: <code>{signal.trailing_stop}</code>\n"
+            f"⚖️ Risk/Reward: 1:{signal.risk_reward:g}\n"
+            f"🧯 Account Risk: {signal.risk_percent:g}%\n"
             f"📊 RSI: {signal.rsi}\n"
             f"{trend_icon} Trend: {escape(signal.trend)}\n"
             f"🔥 Confidence: {signal.confidence:.0%}\n\n"
@@ -136,7 +141,7 @@ class TelegramService:
             direction_icon = "🚀🟢" if signal["direction"] == "BUY" else "🔻🔴"
             lines.append(
                 f"{direction_icon} {signal['direction']} {signal['pair']} {signal['timeframe']} "
-                f"@ {signal['entry']} ({signal['timestamp']})"
+                f"@ {signal['entry']} | SL {signal['stop_loss']} | TP {signal['take_profit']}"
             )
         await update.message.reply_text("\n".join(lines))
 

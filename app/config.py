@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     MARKET_DATA_MIN_INTERVAL_SECONDS: float = Field(default=8.0, ge=0.0, le=120.0)
     RATE_LIMIT_REQUESTS: int = Field(default=60, ge=1)
     RATE_LIMIT_WINDOW_SECONDS: int = Field(default=60, ge=1)
+    RISK_ATR_STOP_MULTIPLIER: float = Field(default=1.5, ge=0.1, le=10.0)
+    RISK_REWARD_RATIO: float = Field(default=2.0, ge=0.1, le=10.0)
+    TRAILING_STOP_ATR_MULTIPLIER: float = Field(default=1.0, ge=0.1, le=10.0)
+    ACCOUNT_RISK_PERCENT: float = Field(default=1.0, ge=0.1, le=10.0)
 
     MARKET_PAIRS: str = "EUR/USD,GBP/USD,USD/JPY,AUD/USD"
     TIMEFRAMES: str = "1min,5min"
