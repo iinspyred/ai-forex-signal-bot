@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: ai-forex-signal-bot
+    runtime: docker
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: SCAN_INTERVAL_SECONDS
+        value: "60"
+      - key: SIGNAL_COOLDOWN_MINUTES
+        value: "30"
+      - key: HEARTBEAT_INTERVAL_SECONDS
+        value: "3600"
+      - key: DATABASE_URL
+        value: sqlite:///./data/signals.db
+      - key: TWELVEDATA_API_KEY
+        sync: false
+      - key: FINNHUB_API_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: TELEGRAM_WEBHOOK_URL
+        sync: false
