@@ -1,7 +1,8 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from html import escape
+from zoneinfo import ZoneInfo
 
 from telegram import Update
 from telegram.constants import ParseMode
@@ -12,6 +13,7 @@ from app.models import ScannerState, Signal
 from app.services.database import SignalDatabase
 
 logger = logging.getLogger(__name__)
+NIGERIA_TZ = ZoneInfo("Africa/Lagos")
 
 
 class TelegramService:
@@ -70,10 +72,17 @@ class TelegramService:
     async def send_signal(self, signal: Signal) -> None:
         icon = "🚀🟢 BUY SIGNAL" if signal.direction.value == "BUY" else "🔻🔴 SELL SIGNAL"
         trend_icon = "📈" if signal.trend == "Bullish" else "📉" if signal.trend == "Bearish" else "➡️"
+        trade_time = signal.timestamp.astimezone(NIGERIA_TZ)
+        timeframe_minutes = self._timeframe_minutes(signal.timeframe)
+        martingale_levels = self._martingale_levels(trade_time, timeframe_minutes)
         text = (
             f"<b>{icon}</b>\n\n"
+            f"🧾 <b>TRADE NOW</b>\n"
             f"💱 Pair: <b>{escape(signal.pair)}</b>\n"
             f"⏱️ Timeframe: {escape(signal.timeframe)}\n"
+            f"🕘 Nigeria Time: <b>{trade_time.strftime('%I:%M %p')}</b>\n"
+            f"⌛ Expiry: <b>{timeframe_minutes} min</b>\n"
+            f"🧭 Direction: <b>{signal.direction.value}</b>\n\n"
             f"🎯 Entry: <code>{signal.entry}</code>\n"
             f"🛑 Stop Loss: <code>{signal.stop_loss}</code>\n"
             f"💰 Take Profit: <code>{signal.take_profit}</code>\n"
@@ -83,8 +92,12 @@ class TelegramService:
             f"📊 RSI: {signal.rsi}\n"
             f"{trend_icon} Trend: {escape(signal.trend)}\n"
             f"🔥 Confidence: {signal.confidence:.0%}\n\n"
+            "🪜 <b>Martingale Levels</b>\n"
+            f"Level 1 ➜ {martingale_levels[0]}\n"
+            f"Level 2 ➜ {martingale_levels[1]}\n"
+            f"Level 3 ➜ {martingale_levels[2]}\n\n"
             f"🧠 Strategy:\n{escape(signal.strategy)}\n\n"
-            f"🕒 Timestamp: {signal.timestamp.astimezone(timezone.utc).isoformat()}"
+            f"🕒 UTC: {signal.timestamp.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}"
         )
         await self.send_message(text, parse_mode=ParseMode.HTML)
 
@@ -139,9 +152,10 @@ class TelegramService:
         lines = ["📈 Latest signals"]
         for signal in signals:
             direction_icon = "🚀🟢" if signal["direction"] == "BUY" else "🔻🔴"
+            timestamp = datetime.fromisoformat(signal["timestamp"]).astimezone(NIGERIA_TZ)
             lines.append(
                 f"{direction_icon} {signal['direction']} {signal['pair']} {signal['timeframe']} "
-                f"@ {signal['entry']} | SL {signal['stop_loss']} | TP {signal['take_profit']}"
+                f"@ {signal['entry']} | {timestamp.strftime('%I:%M %p')} NG"
             )
         await update.message.reply_text("\n".join(lines))
 
@@ -164,6 +178,20 @@ class TelegramService:
         self.application.add_handler(CommandHandler("status", self._status_command))
         self.application.add_handler(CommandHandler("signals", self._signals_command))
         self.application.add_handler(CommandHandler("stats", self._stats_command))
+
+    @staticmethod
+    def _timeframe_minutes(timeframe: str) -> int:
+        if timeframe.endswith("min"):
+            return max(1, int(timeframe.replace("min", "")))
+        return 1
+
+    @staticmethod
+    def _martingale_levels(trade_time: datetime, timeframe_minutes: int) -> list[str]:
+        base = trade_time.replace(second=0, microsecond=0)
+        return [
+            (base + timedelta(minutes=level * timeframe_minutes)).strftime("%I:%M %p")
+            for level in range(1, 4)
+        ]
 
 
 async def hourly_heartbeat(service: TelegramService, interval_seconds: int) -> None:
